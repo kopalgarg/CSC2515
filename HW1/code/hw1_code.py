@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
 import os
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
@@ -9,24 +9,21 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
 from pprint import pprint
+from sklearn import tree
 
 # question 3.a.
 def load_data(data_path):
-
     # load in clean fake and clean real txt files
     clean_fake = pd.read_table(os.path.join(data_path, 'clean_fake.txt'), header = None)
     clean_fake['y'] = 'fake'
     clean_real = pd.read_table(os.path.join(data_path, 'clean_real.txt'), header = None)
     clean_real['y'] = 'real'
-
     df = clean_fake.append(clean_real)
     df_x = df[0]
     df_y = df['y']
-
     # preprocessing: count vectorizer 
     vectorizer = CountVectorizer()
     df_x_v = vectorizer.fit_transform(df_x)
-
     # split into train, validation and test sets.
     train_ratio = 0.70
     validation_ratio = 0.15
@@ -35,66 +32,80 @@ def load_data(data_path):
     X_train, X_test, y_train, y_test = train_test_split(df_x_v, df_y, test_size= 1 - train_ratio)
     # test: 15% of initial dataset, validation: 15% of initial dataset 
     X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, test_size=test_ratio/(test_ratio + validation_ratio)) 
-
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    return X_train, X_val, X_test, y_train, y_val, y_test, vectorizer
 
 # question 3.b.
 def select_tree_model(X_train, X_val, y_train, y_val):
+    best_score = 0
+    best_tree = None
     max_depth = [2,4,6,8,10,12]
     criteria = ['entropy', 'gini']
-    parameters = dict(dec_tree__criterion=criteria,
-                      dec_tree__max_depth=max_depth)
-    # decision tree
-    dt = DecisionTreeClassifier()
-    pipe = Pipeline(steps=[('dec_tree', dt)])
-    # grid search
-    clf_gs = GridSearchCV(pipe, parameters)
-    clf_gs.fit(X_train, y_train)
-    # best model parameters 
-    criterion_best = clf_gs.best_estimator_.get_params()['dec_tree__criterion']
-    max_depth_best = clf_gs.best_estimator_.get_params()['dec_tree__max_depth']
-    # best model
-    clf = clf_gs.best_estimator_.get_params()['dec_tree']
-    # predictions 
-    predictions = clf.predict(X_val)
-    # accuracy score computation
-    accuracy_sc = accuracy_score(y_val, predictions)
+    # generate parameters 
+    parameters_list = []
+    for i in max_depth:
+        for criterion in criteria:
+            parameters_list.append({
+				"max_depth": i,
+				"criterion": criterion })
+    for parameters in parameters_list:
+        # decision Tree Classifier
+        dtc = DecisionTreeClassifier(max_depth=parameters["max_depth"], criterion=parameters["criterion"], splitter="random",)
+        # train on train data
+        dtc.fit(X=X_train, y=y_train)
+        # test on validation data 
+        predicted = dtc.predict(X = X_val)
+        correct = 0
+        # compute score
+        for i,j in zip(predicted, y_val):
+            if i==j:
+                correct+=1
+        # score as a percent
+        accuracy_percent = 100*(correct / len(np.asarray(y_val)))
+        # print results 
+        print("max_depth: {}, criterion: {}, accuracy: {:.2f}".format(
+		str(parameters["max_depth"]).ljust(2),
+		parameters["criterion"].ljust(7),
+		accuracy_percent))
+        if accuracy_percent>best_score: best_score = accuracy_percent; best_tree = dtc
+    # print best results
+    print("best_parameters:")
+    print("best_tree: {}, best_score: {}".format(
+	best_tree,
+	best_score))
+    return best_tree, best_score
 
-    means = clf_gs.cv_results_['mean_test_score']
-    stds = clf_gs.cv_results_['std_test_score']
-    for mean, std, params in zip(means, stds, clf.cv_results_['params']):
-        print("%0.3f (+/-%0.03f) for %r"
-        % (mean, std * 2, params))
+# question 3.c. 
+def best_model_accuracy(X_test, y_test, best_tree):
+    predicted = best_tree.predict(X=X_test)
+    correct = 0
+    # compute score
+    for i,j in zip(predicted, y_test):
+        if i==j:
+            correct+=1
+    # score as a percent
+    accuracy_percent = 100*(correct / len(np.asarray(y_test)))
+    # print results 
+    print("test accuracy: {:.2f}".format(accuracy_percent))
+    return accuracy_percent
 
-    return clf
+def plot_tree(best_tree, vectorizer):
+    fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (4,4), dpi=300)
+    tree.plot_tree(best_tree, 
+    max_depth=2, 
+    feature_names = vectorizer.get_feature_names(), 
+    class_names = best_tree.classes_)
+    fig.savefig('images/Q3_c_tree.png')
 
-def select_model(x_train, x_val,y_train, y_val):     
-    #fit the training datasets to Classifier 
-    acc_rate = 0
-    depth_test = pd.Series([5,10,20,30,40], index = [0,1,2,3,4])
-    cri_test = pd.Series(['gini','entropy'], index = [0,1])
-    for a in range (cri_test.count()):
-        for b in range (depth_test.count()):
-            clf = DecisionTreeClassifier(max_depth=depth_test[b],criterion=cri_test[a])
-            clf.fit(x_train, y_train)
-            predictions = clf.predict(x_val)
-            real = np.array(y_val)
-            count = 0
-            
-            #calculate accurancy of validation data for each combination
-            for i in range (len(real)):
-                if predictions[i] == real[i]:
-                    count =count +1
-                    acc_rate1 = count/len(real)
-            print('Accurancy is', acc_rate1, 'with decision tree depth equals to', depth_test[b], 'and criterion is', cri_test[a])
-            
-            # find the classifier with best performance (biggest accurancy) 
-            if acc_rate1 >= acc_rate:
-                acc_rate = acc_rate1
-                depth = depth_test[b]
-                cri = cri_test[a]
-                classifier = clf
-    print('The best classifier has accurancy of', acc_rate, 'with decision tree depth equals to', depth, 'and criterion is', cri)
+# question 3.d.
+def compute_information_gain(X_train, y_train, vectorizer, keyword, threshold):
 
-X_train, X_val, X_test, y_train, y_val, y_test = load_data('/Users/kopalgarg/Documents/GitHub/CSC2515/HW1/data/')
-select_tree_model(X_train, X_val, y_train, y_val)
+    return 0
+
+def main():
+    X_train, X_val, X_test, y_train, y_val, y_test, vectorizer = load_data('/Users/kopalgarg/Documents/GitHub/CSC2515/HW1/data/')
+    best_tree, best_score = select_tree_model(X_train, X_val, y_train, y_val)
+    accuracy_percent = best_model_accuracy(X_test, y_test, best_tree)
+    plot_tree(best_tree, vectorizer)
+
+if __name__ == "__main__":
+	main()
