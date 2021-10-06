@@ -32,7 +32,7 @@ def load_data(data_path):
     X_train, X_test, y_train, y_test = train_test_split(df_x_v, df_y, test_size= 1 - train_ratio)
     # test: 15% of initial dataset, validation: 15% of initial dataset 
     X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, test_size=test_ratio/(test_ratio + validation_ratio)) 
-    return X_train, X_val, X_test, y_train, y_val, y_test, vectorizer
+    return df_x, df_y, X_train, X_val, X_test, y_train, y_val, y_test, vectorizer, df_x_v
 
 # question 3.b.
 def select_tree_model(X_train, X_val, y_train, y_val):
@@ -97,15 +97,20 @@ def plot_tree(best_tree, vectorizer):
     fig.savefig('images/Q3_c_tree.png')
 
 # question 3.d.
-def compute_information_gain(X_train, y_train, vectorizer, keyword, threshold):
+def compute_information_gain(X_train, y_train, vectorizer, df_x, df_x_v, feature_name):
+    features = vectorizer.get_feature_names()
+    if feature_name in features: id = features.index(feature_name)
+    df_x_v_array = df_x_v.toarray()
+    print(df_x_v_array[:,id])
 
     return 0
 
 def main():
-    X_train, X_val, X_test, y_train, y_val, y_test, vectorizer = load_data('/Users/kopalgarg/Documents/GitHub/CSC2515/HW1/data/')
+    df_x, df_y, X_train, X_val, X_test, y_train, y_val, y_test, vectorizer,df_x_v = load_data('/Users/kopalgarg/Documents/GitHub/CSC2515/HW1/data/')
     best_tree, best_score = select_tree_model(X_train, X_val, y_train, y_val)
-    accuracy_percent = best_model_accuracy(X_test, y_test, best_tree)
+    best_model_accuracy(X_test, y_test, best_tree)
     plot_tree(best_tree, vectorizer)
+    compute_information_gain(X_train, y_train, vectorizer, df_x, df_x_v, 'trump')
 
 if __name__ == "__main__":
 	main()
