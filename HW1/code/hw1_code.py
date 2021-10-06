@@ -1,3 +1,6 @@
+# CSC2515
+# Kopal Garg, 1003063221
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -5,14 +8,16 @@ import os
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import GridSearchCV
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score
-from pprint import pprint
 from sklearn import tree
+from math import log2
 
 # question 3.a.
 def load_data(data_path):
+    '''
+    Q 3.a
+    load dataset, preprocess using a count vectorizer,
+    split into train, validation and test sets
+    '''
     # load in clean fake and clean real txt files
     clean_fake = pd.read_table(os.path.join(data_path, 'clean_fake.txt'), header = None)
     clean_fake['y'] = 'fake'
@@ -36,9 +41,15 @@ def load_data(data_path):
 
 # question 3.b.
 def select_tree_model(X_train, X_val, y_train, y_val):
+    '''
+    Q 3.b
+    train decision trees for each max_depth and criterion combination,
+    compute accuracy on validation set, 
+    return best model
+    '''
     best_score = 0
     best_tree = None
-    max_depth = [2,4,6,8,10,12]
+    max_depth = [2,4,8,16,32]
     criteria = ['entropy', 'gini']
     # generate parameters 
     parameters_list = []
@@ -49,7 +60,9 @@ def select_tree_model(X_train, X_val, y_train, y_val):
 				"criterion": criterion })
     for parameters in parameters_list:
         # decision Tree Classifier
-        dtc = DecisionTreeClassifier(max_depth=parameters["max_depth"], criterion=parameters["criterion"], splitter="random",)
+        dtc = DecisionTreeClassifier(max_depth=parameters["max_depth"], 
+                                                criterion=parameters["criterion"], 
+                                                splitter="best",)
         # train on train data
         dtc.fit(X=X_train, y=y_train)
         # test on validation data 
@@ -76,6 +89,10 @@ def select_tree_model(X_train, X_val, y_train, y_val):
 
 # question 3.c. 
 def best_model_accuracy(X_test, y_test, best_tree):
+    '''
+    Q 3.c
+    compute test accuracy of best tree
+    '''
     predicted = best_tree.predict(X=X_test)
     correct = 0
     # compute score
@@ -88,29 +105,78 @@ def best_model_accuracy(X_test, y_test, best_tree):
     print("test accuracy: {:.2f}".format(accuracy_percent))
     return accuracy_percent
 
-def plot_tree(best_tree, vectorizer):
-    fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (4,4), dpi=300)
+def visualize_tree(best_tree, vectorizer):
+    '''
+    Q 3.c
+    plot the first two layers of the best tree
+    '''
+    fig, axes = plt.subplots(figsize=(12,12))
     tree.plot_tree(best_tree, 
     max_depth=2, 
     feature_names = vectorizer.get_feature_names(), 
-    class_names = best_tree.classes_)
+    class_names = best_tree.classes_,
+    filled=True,
+    fontsize=15)
     fig.savefig('images/Q3_c_tree.png')
 
 # question 3.d.
-def compute_information_gain(X_train, y_train, vectorizer, df_x, df_x_v, feature_name):
-    features = vectorizer.get_feature_names()
-    if feature_name in features: id = features.index(feature_name)
-    df_x_v_array = df_x_v.toarray()
-    print(df_x_v_array[:,id])
+def compute_information_gain(vectorizer, df_y, df_x_v, feature_name):
+    '''
+    Q 3.d
+    compute the information gain for given feature 
+    '''
+    def entropy(y):
+        real =  y.where(y == 'real').dropna()
+        pr = len(real)/len(y)
+        H = -(pr*log2_(pr))-((1-pr)*log2_(1-pr))
+        return H
 
-    return 0
+    features = vectorizer.get_feature_names()
+
+    if feature_name in features: 
+        id = features.index(feature_name)
+    else:
+        print("Information Gain for {} is {:.3f}".format(feature_name, 0))
+        return None
+    df_x_v_array = df_x_v.toarray()
+   
+    # parent node entropy
+    H_parent = entropy(df_y)
+
+    # right split entropy
+    right_y = df_y[df_x_v_array[:,id] >= 0.5]
+    H_right = entropy(right_y)
+
+    # left split entropy
+    left_y = df_y[df_x_v_array[:,id] < 0.5]
+    H_left = entropy(left_y)
+
+    # information gain
+    IG = H_parent - (((len(left_y)/len(df_y))*H_left) + ((len(right_y)/len(df_y))*H_right))
+
+    print("Information Gain for {} is {:.3f}".format(feature_name, IG))
+
+    return IG
 
 def main():
     df_x, df_y, X_train, X_val, X_test, y_train, y_val, y_test, vectorizer,df_x_v = load_data('/Users/kopalgarg/Documents/GitHub/CSC2515/HW1/data/')
     best_tree, best_score = select_tree_model(X_train, X_val, y_train, y_val)
     best_model_accuracy(X_test, y_test, best_tree)
-    plot_tree(best_tree, vectorizer)
-    compute_information_gain(X_train, y_train, vectorizer, df_x, df_x_v, 'trump')
+    visualize_tree(best_tree, vectorizer)
+    # Top most split keyword
+    compute_information_gain(vectorizer, df_y, df_x_v, 'donald')
+    # Other keywords
+    compute_information_gain(vectorizer, df_y, df_x_v, 'hillary')
+    compute_information_gain(vectorizer, df_y, df_x_v, 'the')
+    compute_information_gain(vectorizer, df_y, df_x_v, 'trump')
+    compute_information_gain(vectorizer, df_y, df_x_v, 'dogs')
+
+def log2_(x):
+    if x ==0:
+        return(0)
+    else:
+        return(log2(x))
+
 
 if __name__ == "__main__":
 	main()
