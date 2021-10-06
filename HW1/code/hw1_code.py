@@ -10,6 +10,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import tree
 from math import log2
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn import metrics
 
 # question 3.a.
 def load_data(data_path):
@@ -119,6 +121,11 @@ def visualize_tree(best_tree, vectorizer):
     fontsize=15)
     fig.savefig('images/Q3_c_tree.png')
 
+def log2_(x):
+    if x ==0:
+        return(0)
+    else:
+        return(log2(x))
 # question 3.d.
 def compute_information_gain(vectorizer, df_y, df_x_v, feature_name):
     '''
@@ -158,8 +165,75 @@ def compute_information_gain(vectorizer, df_y, df_x_v, feature_name):
 
     return IG
 
+# question 3.e.
+def select_knn_model(X_train, y_train, X_val, y_val, X_test, y_test, data_path):
+    '''
+    Q 3.e
+    classify between real and fake news using a KNN classifier 
+    '''
+    # load in clean fake and clean real txt files
+    clean_fake = pd.read_table(os.path.join(data_path, 'clean_fake.txt'), header = None)
+    clean_fake['y'] = 'fake'
+    clean_real = pd.read_table(os.path.join(data_path, 'clean_real.txt'), header = None)
+    clean_real['y'] = 'real'
+    df = clean_fake.append(clean_real)
+    df_x = df[0]
+    df_y = df['y']
+    # preprocessing: count vectorizer 
+    vectorizer = CountVectorizer()
+    df_x_v = vectorizer.fit_transform(df_x)
+    # split into train, validation and test sets.
+    train_ratio = 0.70
+    validation_ratio = 0.15
+    test_ratio = 0.15
+    # train: 70% of the data 
+    X_train, X_test, y_train, y_test = train_test_split(df_x_v, df_y, test_size= 1 - train_ratio)
+    # test: 15% of initial dataset, validation: 15% of initial dataset 
+    X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, test_size=test_ratio/(test_ratio + validation_ratio)) 
+    # KNN
+    train_error = []
+    val_error = []
+    best_val_acc = -1
+    best_model = None
+    for k in range(1, 21):
+        knc = KNeighborsClassifier(n_neighbors=k).fit(X_train, y_train)
+        pred_train = knc.predict(X_train)
+        pred_val = knc.predict(X_val)
+        # training and validation accuracy
+        train_acc_k = metrics.accuracy_score(y_train, pred_train)
+        val_acc_k = metrics.accuracy_score(y_val, pred_val)
+        if val_acc_k > best_val_acc: best_val_acc = val_acc_k; best_model = knc
+        print("Train Accuracy:", metrics.accuracy_score(pred_train, y_train))
+        print("Validation Accuracy:", metrics.accuracy_score(pred_val, y_val))
+        # training and validation error
+        error_train = 0
+        error_val = 0
+        for i,j in zip(pred_train, y_train):
+            if i!=j:
+                error_train+=1
+        for i,j in zip(pred_val, y_val):
+            if i!=j:
+                error_val+=1
+        train_error.append(error_train)
+        val_error.append(error_val)
+    
+    print("Best validation accuracy {}:".format(best_val_acc))
+    # compute test accuracy using best KNN model
+    print("Test accuracy: {}".format(metrics.accuracy_score(y_test, best_model.predict(X_test))))
+    # plot the validation and train accuracy curves 
+    fig, axes = plt.subplots(figsize=(12,12))
+    axes.plot(range(1,21), train_error, label = 'train', color ='cyan', marker='o')
+    axes.plot(range(1,21), val_error, label = 'validation', color = 'orange', marker='o')
+    axes.legend()
+    axes.invert_xaxis()
+    axes.set_xlabel("k (number of nearest neighbors)")
+    axes.set_ylabel("error")
+    fig.savefig('images/Q3_e_KNN.png')
+
+    
 def main():
-    df_x, df_y, X_train, X_val, X_test, y_train, y_val, y_test, vectorizer,df_x_v = load_data('/Users/kopalgarg/Documents/GitHub/CSC2515/HW1/data/')
+    data_path = '/Users/kopalgarg/Documents/GitHub/CSC2515/HW1/data/'
+    df_x, df_y, X_train, X_val, X_test, y_train, y_val, y_test, vectorizer,df_x_v = load_data(data_path)
     best_tree, best_score = select_tree_model(X_train, X_val, y_train, y_val)
     best_model_accuracy(X_test, y_test, best_tree)
     visualize_tree(best_tree, vectorizer)
@@ -170,13 +244,8 @@ def main():
     compute_information_gain(vectorizer, df_y, df_x_v, 'the')
     compute_information_gain(vectorizer, df_y, df_x_v, 'trump')
     compute_information_gain(vectorizer, df_y, df_x_v, 'dogs')
-
-def log2_(x):
-    if x ==0:
-        return(0)
-    else:
-        return(log2(x))
-
+    # KNN
+    select_knn_model(X_train, y_train, X_val, y_val, X_test, y_test, data_path)
 
 if __name__ == "__main__":
 	main()
