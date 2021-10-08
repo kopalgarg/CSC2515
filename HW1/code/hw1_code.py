@@ -21,7 +21,7 @@ def load_data(data_path):
     split into train, validation and test sets
     '''
     # load in clean fake and clean real txt files
-    clean_fake = pd.read_table(os.path.join(data_path, 'clean_fake.txt'), header = None)
+    clean_fake = pd.read_table('clean_fake.txt', header = None)
     clean_fake['y'] = 'fake'
     clean_real = pd.read_table(os.path.join(data_path, 'clean_real.txt'), header = None)
     clean_real['y'] = 'real'
@@ -119,19 +119,21 @@ def visualize_tree(best_tree, vectorizer):
     class_names = best_tree.classes_,
     filled=True,
     fontsize=15)
-    fig.savefig('images/Q3_c_tree.png')
+    fig.savefig('Q3_c_tree.png')
 
 def log2_(x):
     if x ==0:
         return(0)
     else:
         return(log2(x))
+        
 # question 3.d.
-def compute_information_gain(vectorizer, df_y, df_x_v, feature_name):
+def compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, feature_name):
     '''
     Q 3.d
-    compute the information gain for given feature 
+    compute the information gain for given feature on the training set 
     '''
+    
     def entropy(y):
         real =  y.where(y == 'real').dropna()
         pr = len(real)/len(y)
@@ -145,21 +147,21 @@ def compute_information_gain(vectorizer, df_y, df_x_v, feature_name):
     else:
         print("Information Gain for {} is {:.3f}".format(feature_name, 0))
         return None
-    df_x_v_array = df_x_v.toarray()
+    df_x_v_array = X_train.toarray()
    
     # parent node entropy
-    H_parent = entropy(df_y)
+    H_parent = entropy(y_train)
 
     # right split entropy
-    right_y = df_y[df_x_v_array[:,id] >= 0.5]
+    right_y = y_train[df_x_v_array[:,id] >= 0.5]
     H_right = entropy(right_y)
 
     # left split entropy
-    left_y = df_y[df_x_v_array[:,id] < 0.5]
+    left_y = y_train[df_x_v_array[:,id] < 0.5]
     H_left = entropy(left_y)
 
     # information gain
-    IG = H_parent - (((len(left_y)/len(df_y))*H_left) + ((len(right_y)/len(df_y))*H_right))
+    IG = H_parent - (((len(left_y)/len(y_train))*H_left) + ((len(right_y)/len(y_train))*H_right))
 
     print("Information Gain for {} is {:.3f}".format(feature_name, IG))
 
@@ -187,9 +189,10 @@ def select_knn_model(X_train, y_train, X_val, y_val, X_test, y_test, data_path):
     validation_ratio = 0.15
     test_ratio = 0.15
     # train: 70% of the data 
-    X_train, X_test, y_train, y_test = train_test_split(df_x_v, df_y, test_size= 1 - train_ratio)
+    X_train, X_test, y_train, y_test = train_test_split(df_x_v, df_y, test_size= 1 - train_ratio, random_state=42)
     # test: 15% of initial dataset, validation: 15% of initial dataset 
-    X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, test_size=test_ratio/(test_ratio + validation_ratio)) 
+    X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, test_size=test_ratio/(test_ratio + validation_ratio),
+    random_state=42) 
     # KNN
     train_error = []
     val_error = []
@@ -228,7 +231,7 @@ def select_knn_model(X_train, y_train, X_val, y_val, X_test, y_test, data_path):
     axes.invert_xaxis()
     axes.set_xlabel("k (number of nearest neighbors)")
     axes.set_ylabel("error")
-    fig.savefig('images/Q3_e_KNN.png')
+    fig.savefig('Q3_e_KNN.png')
 
     
 def main():
@@ -238,12 +241,12 @@ def main():
     best_model_accuracy(X_test, y_test, best_tree)
     visualize_tree(best_tree, vectorizer)
     # Top most split keyword
-    compute_information_gain(vectorizer, df_y, df_x_v, 'donald')
+    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'donald')
     # Other keywords
-    compute_information_gain(vectorizer, df_y, df_x_v, 'hillary')
-    compute_information_gain(vectorizer, df_y, df_x_v, 'the')
-    compute_information_gain(vectorizer, df_y, df_x_v, 'trump')
-    compute_information_gain(vectorizer, df_y, df_x_v, 'dogs')
+    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'hillary')
+    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'the')
+    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'trump')
+    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'dogs')
     # KNN
     select_knn_model(X_train, y_train, X_val, y_val, X_test, y_test, data_path)
 
