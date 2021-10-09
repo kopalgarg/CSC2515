@@ -1,6 +1,6 @@
 # CSC2515
 # Kopal Garg, 1003063221
-
+# Team: Yujie Chen, Rohan Deepak Ajwani
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -49,7 +49,7 @@ def select_tree_model(X_train, X_val, y_train, y_val):
     compute accuracy on validation set, 
     return best model
     '''
-    best_score = 0
+    best_score = -1
     best_tree = None
     max_depth = [2,4,8,16,32]
     criteria = ['entropy', 'gini']
@@ -168,7 +168,7 @@ def compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, feature
     return IG
 
 # question 3.e.
-def select_knn_model(X_train, y_train, X_val, y_val, X_test, y_test, data_path):
+def select_knn_model(data_path):
     '''
     Q 3.e
     classify between real and fake news using a KNN classifier 
@@ -241,14 +241,15 @@ def main():
     best_model_accuracy(X_test, y_test, best_tree)
     visualize_tree(best_tree, vectorizer)
     # Top most split keyword
-    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'donald')
-    # Other keywords
-    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'hillary')
     compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'the')
-    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'trump')
-    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'dogs')
+    # Other keywords
+    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'donald')
+    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'trumps')
+    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'hillary')
+    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'le')
+    compute_information_gain(X_train, y_train, vectorizer, df_y, df_x_v, 'coal')
     # KNN
-    select_knn_model(X_train, y_train, X_val, y_val, X_test, y_test, data_path)
+    select_knn_model(data_path)
 
 if __name__ == "__main__":
 	main()
