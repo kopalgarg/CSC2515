@@ -39,10 +39,18 @@ def LRLS(test_datum, x_train, y_train, tau, lam=1e-5):
            lam is the regularization parameter
     output is y_hat the prediction on test_datum
     '''
-    ## TODO
-    return None
-    ## TODO
+    numerator = np.exp(-(l2(test_datum.transpose(), x_train))/(2*tau**2))
+        # convert test vector (14,) to matrix (14,1)
+    test_datum = test_datum.reshape(test_datum.shape[0], 1)
 
+    A = np.diagflat(np.exp(-l2(test_datum.T, x_train)/(2*(tau**2)))/
+    np.exp(logsumexp(-l2(test_datum.T, x_train)/(2*(tau**2)))))
+    # w = (XT*A*X + lambda*I)^-1 XT*A*y
+    w = np.linalg.solve(x_train.T.dot(A).dot(x_train) + lam * np.identity(x_train.shape[1]), x_train.T.dot(A).dot(y_train))
+    prediction = test_datum.T.dot(w)
+
+    return prediction
+    
 #helper function
 def run_on_fold(x_test, y_test, x_train, y_train, taus):
     '''
