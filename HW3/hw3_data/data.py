@@ -12,6 +12,7 @@ TEST_STEM = "test_"
 TRAIN_STEM = "train_"
 
 def check_and_extract_zipfile(filename, data_dir):
+    os.chdir(data_dir)
     if os.path.isdir(data_dir) and not os.listdir(data_dir):
         pass
     else:

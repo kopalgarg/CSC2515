@@ -15,6 +15,10 @@ def plot_means(train_data, train_labels):
     for i in range(0, 10):
         i_digits = data.get_digits_by_label(train_data, train_labels, i)
         # Compute mean of class i
+        means.append([])
+        for j in range(len(i_digits[0])):
+            means[i].append(np.mean(i_digits[:, j]))
+        means[i] = np.array(means[i]).reshape(8,8)
 
     # Plot all means on same axis
     all_concat = np.concatenate(means, 1)
@@ -22,6 +26,5 @@ def plot_means(train_data, train_labels):
     plt.show()
 
 if __name__ == '__main__':
-    import pdb; pdb.set_trace()
-    train_data, train_labels, _, _ = data.load_all_data_from_zip('a3digits.zip', 'data')
+    train_data, train_labels, _, _ = data.load_all_data_from_zip('a3digits.zip', './HW3/hw3_data/')
     plot_means(train_data, train_labels)
