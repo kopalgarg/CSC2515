@@ -50,7 +50,7 @@ class KNearestNeighbor(object):
         while noTies == False:
             mink = np.argpartition(dist, k)[:k]
             counts = np.bincount(self.train_labels[mink].astype(int))
-            digit = np.argwhere(counts = np.max(counts))
+            digit = np.argwhere(counts == np.max(counts))
             if len(digit)>1:
                 k=k-1
             else:
