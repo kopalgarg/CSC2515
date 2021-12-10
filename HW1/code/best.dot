@@ -1,0 +1,28 @@
+digraph Tree {
+node [shape=box] ;
+0 [label="trumps <= 0.885\nentropy = 0.973\nsamples = 2286\nvalue = [921, 1365]\nclass = real"] ;
+1 [label="donald <= 0.519\nentropy = 0.987\nsamples = 2125\nvalue = [919, 1206]\nclass = real"] ;
+0 -> 1 [labeldistance=2.5, labelangle=45, headlabel="True"] ;
+2 [label="hillary <= 0.446\nentropy = 0.999\nsamples = 1458\nvalue = [757, 701]\nclass = fake"] ;
+1 -> 2 ;
+3 [label="(...)"] ;
+2 -> 3 ;
+58 [label="(...)"] ;
+2 -> 58 ;
+69 [label="and <= 0.252\nentropy = 0.8\nsamples = 667\nvalue = [162, 505]\nclass = real"] ;
+1 -> 69 ;
+70 [label="(...)"] ;
+69 -> 70 ;
+139 [label="(...)"] ;
+69 -> 139 ;
+158 [label="coal <= 0.708\nentropy = 0.096\nsamples = 161\nvalue = [2, 159]\nclass = real"] ;
+0 -> 158 [labeldistance=2.5, labelangle=-45, headlabel="False"] ;
+159 [label="shatters <= 0.324\nentropy = 0.055\nsamples = 160\nvalue = [1, 159]\nclass = real"] ;
+158 -> 159 ;
+160 [label="(...)"] ;
+159 -> 160 ;
+161 [label="(...)"] ;
+159 -> 161 ;
+162 [label="entropy = 0.0\nsamples = 1\nvalue = [1, 0]\nclass = fake"] ;
+158 -> 162 ;
+}
