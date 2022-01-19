@@ -1,2 +1,7 @@
 # CSC2515
-Introduction to Machine Learning 
+
+HW1: Decision Tree, Information Gain, Real and Fake News KNN Classifier 
+
+HW2: Locally Weighted Regression
+
+HW3: KNN Implementaion from Scratch
